@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 
-// Assuming a hypothetical Llama API client
-import LlamaAPI from 'llama-api'
-
-const llama = new LlamaAPI(process.env.LLAMA_API_KEY)
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
 
 const systemPrompt = `
 You are a flashcard creator. Create exactly 10 flashcards from the given text.
@@ -23,13 +21,16 @@ export async function POST(req) {
   const data = await req.text()
 
   try {
-    const response = await llama.complete({
-      prompt: `${systemPrompt}\n\nText: ${data}`,
-      maxTokens: 1000,
-      temperature: 0.7,
-    })
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" })
 
-    const flashcards = JSON.parse(response.choices[0].text)
+    const result = await model.generateContent([
+      systemPrompt,
+      `Text: ${data}`
+    ])
+    const response = await result.response
+    const text = response.text()
+
+    const flashcards = JSON.parse(text)
     return NextResponse.json(flashcards.flashcards)
   } catch (error) {
     console.error('Error generating flashcards:', error)
